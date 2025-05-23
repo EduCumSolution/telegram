@@ -1,9 +1,8 @@
 const { TelegramClient } = require("telegram");
 const { StringSession } = require("telegram/sessions");
-const { Api } = require("telegram");
 
-const apiId = 123456; // ← अपना API ID डालें
-const apiHash = "YOUR_API_HASH"; // ← अपना API Hash डालें
+const apiId = 123456; // Replace with your API ID
+const apiHash = "YOUR_API_HASH"; // Replace with your API Hash
 
 const sessions = {};
 
@@ -16,7 +15,7 @@ async function requestCode(phone) {
   await client.start({
     phoneNumber: async () => phone,
     password: async () => "",
-    phoneCode: async () => "", // wait for user input later
+    phoneCode: async () => "",
     onError: (err) => console.log(err),
   });
 
@@ -38,9 +37,7 @@ async function verifyCode(phone, code) {
     phoneCode: code,
   });
 
-  // Save session string
-  const sessionStr = client.session.save();
-  return sessionStr;
+  return client.session.save();
 }
 
 module.exports = { requestCode, verifyCode };
